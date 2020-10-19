@@ -71,9 +71,10 @@ def adj_edgelist():
                 edge_num += 1
                 is_isolated[i] = True
                 is_isolated[j] = True
-
+    print('length of label_dict before filtering: {}'.format(len(label_dict)))
+    # delete the isolated nodes
     for i in range(total_num):
-        if is_isolated[i] == False:
+        if not is_isolated[i]:
             del label_dict[i]
     print('length of label_dict after filtering: {}'.format(len(label_dict)))
     f.close()
@@ -82,6 +83,9 @@ def adj_edgelist():
     '''
     number of edges before filtering: 164824
     number of edges before filtering: 228902020
+    
+    number of edges after filtering: 159833
+    number of edges after filering: 224877458
     '''
 
     # return adj, edgelist, name_dict
