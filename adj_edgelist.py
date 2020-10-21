@@ -34,7 +34,7 @@ def adj_edgelist():
             s = '{}_{}'.format(x, y)
             # make sure x<y
             # 0xa_0xb and 0xb_0xa are the same node
-            # otherwise 0xa_0xb and 0xb_0xa is considered to be different nodes
+            # otherwise 0xa_0xb and 0xb_0xa will be considered to be different nodes
             if x > y:
                 s = '{}_{}'.format(y, x)
             if (s not in name_dict) and (v != 0):
@@ -56,9 +56,10 @@ def adj_edgelist():
     pos = label_dict[0].find('_')
 
     edge_num = 0
-    is_isolated = [False for n in range(total_num)]
-    # is_isolated is used to judge whether the node pair is isolated after filtering
-    # out the node pairs whose value is 0
+
+    neighbors_736nodes = [0 for i in range(736)]
+    # check the number of neighbours of the 736 nodes
+    # delete some unuseful neighbours of some nodes who have too many neighbours
     for i in range(total_num):
         print('i = {}'.format(i))
         for j in range(i+1, total_num):
@@ -69,22 +70,29 @@ def adj_edgelist():
             if x1==x2 or x1==y2 or y1==x2 or y1 ==y2:
                 f.write('{} {}\n'.format(i, j))
                 edge_num += 1
-                is_isolated[i] = True
-                is_isolated[j] = True
-    print('length of label_dict before filtering: {}'.format(len(label_dict)))
-    # delete the isolated nodes
-    for i in range(total_num):
-        if not is_isolated[i]:
-            del label_dict[i]
-    print('length of label_dict after filtering: {}'.format(len(label_dict)))
+                if i<736:
+                    neighbors_736nodes[i] = neighbors_736nodes[i] + 1
+
+    # for i in range(736):
+    #     print('Number of neigbours of node {}: {}'.format(i, neighbors_736nodes[i]))
+
+    """
+    save number of neighbours of nodes into dataframe(csv)
+    """
+    labelOfNodes = range(len(736))
+
+    neighborsOfNodes = pd.DataFrame({"labelOfNodes": labelOfNodes,
+                                    "neighbourNum": neighbors_736nodes})
+    neighborsOfNodes.to_csv('./data/neighbour_nums')
+
     f.close()
     print('edge_num: {}'.format(edge_num))
 
     '''
-    number of edges before filtering: 164824
+    number of nodes before filtering: 164824
     number of edges before filtering: 228902020
     
-    number of edges after filtering: 159833
+    number of nodes after filtering: 159833
     number of edges after filering: 224877458
     '''
 
