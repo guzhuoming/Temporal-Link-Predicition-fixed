@@ -125,6 +125,7 @@ def plotGraph():
             node_dict[y] = num
             num += 1
     print('Number of nodes: {}'.format(len(node_dict)))
+    # 581
 
     # plot the Graph
     G = nx.Graph()
@@ -134,10 +135,14 @@ def plotGraph():
         x = name_[0:pos]
         y = name_[pos + 1:]
         G.add_edge(node_dict[x], node_dict[y])
-    nx.draw(G)
+    plt.figure()
+    nx.draw(G, with_labels=True)
+    plt.show()
 
     # return
 
+
+
 if __name__ == '__main__':
     # adj_edgelist()
-    plotGraph()
+    # plotGraph()
