@@ -1,4 +1,4 @@
-'''
+"""
 extract 10 features:
 1. transaction num,
 2. transaction sum,
@@ -14,8 +14,7 @@ time period
 in the past
 10. the difference between this transaction mean and the max transaction mean of all transactions of this node pair
 in the past
-'''
-
+"""
 import pandas as pd
 import csv
 

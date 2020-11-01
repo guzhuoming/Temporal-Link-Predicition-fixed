@@ -144,5 +144,6 @@ def plotGraph():
 
 
 if __name__ == '__main__':
+    print('preprocess: ')
     # adj_edgelist()
     # plotGraph()

@@ -96,18 +96,19 @@ labels = df['labelOfNodes'].values
 neighbors = df['neighbourNum'].values
 
 print('mean: {}, median: {}'.format(np.mean(neighbors), np.median(neighbors)))
+
 plt.figure()
 plt.plot(labels, neighbors)
 plt.xlabel('node label')
 plt.ylabel('number of neighbours')
 plt.show()
 plt.figure()
-plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000])
+plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], rwidth=0.8)
 plt.xlabel('number of neighbours')
 plt.ylabel('number of nodes')
 plt.show()
 plt.figure()
-plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], cumulative=True)
+plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], cumulative=True, rwidth=0.8)
 plt.xlabel('number of neighbours(cumulative)')
 plt.ylabel('number of nodes')
 plt.show()

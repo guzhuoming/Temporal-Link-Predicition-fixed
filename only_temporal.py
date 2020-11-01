@@ -9,6 +9,8 @@ from keras.layers import Dense, Dropout, LSTM, Bidirectional
 from sklearn.preprocessing import MinMaxScaler
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error
+from tensorflow import set_random_seed
+set_random_seed(2)
 
 name = open('./data/name.csv')
 df_name = pd.read_csv(name)
@@ -66,28 +68,38 @@ def la_ha():
 
 # def arima():
 #
-def lstm():
+def lstm(n_features=4,
+         n_train=9,
+         n_window=5,
+         n_units=100,
+         n_epochs=50
+         ):
+    """
+
+    :param n_features: 4 or 10, using 4 features or 10 features
+    :param n_train: training timesteps
+    :param n_window: width of training window, for example, [0 1 2 3 4]->[5], n_window = 5
+    :param n_units: LSTM units
+    :param n_epochs: trainning epochs
+    :return:
+    """
     data = []
     for i in range(len(name_node_pairs)):
-        f = open('./data/features_4/{}_temp_link_ft.csv'.format(name_node_pairs[i]))
+        f = open('./data/features_{}/{}_temp_link_ft.csv'.format(n_features, name_node_pairs[i]))
         df = pd.read_csv(f)
         data.append(df.values)
     data = np.array(data)
     print('data: {}, \ndata.shape(): {}'.format(data, data.shape))
 
     # define train, test
-    scaler = MinMaxScaler(feature_range=(0, 1))
+    # scaler = MinMaxScaler(feature_range=(0, 1))
     n_samples, n_timesteps, n_features = data.shape
     scaled_data = data.reshape((n_samples, n_timesteps*n_features))
-    scaled_data = scaler.fit_transform(scaled_data)
+    # scaled_data = scaler.fit_transform(scaled_data)
     scaled_data = scaled_data.reshape((n_samples, n_timesteps, n_features))
 
     # define problem properties
-    n_units = 100
-    n_features = 4
-    n_window = 5
-    n_train = 9
-    n_test = 3
+    n_test = 12 - n_train
 
     # define LSTM
     model = Sequential()
@@ -97,7 +109,7 @@ def lstm():
 
     # fit network
     for i in range(n_train-n_window):
-        history = model.fit(scaled_data[:, i: i+n_window, :], scaled_data[:, i+n_window, 1], epochs=100)
+        history = model.fit(scaled_data[:, i: i+n_window, :], scaled_data[:, i+n_window, 1], epochs=n_epochs)
         # plot history
         # plt.plot(history.history['loss'])
         # plt.show()
@@ -123,13 +135,26 @@ def lstm():
     print('inv_yhat.shape:{}'.format(inv_yhat.shape))
     inv_yhat = inv_yhat.reshape(n_samples, n_timesteps*n_features)
     print('inv_yhat.shape:{}'.format(inv_yhat.shape))
-    inv_yhat = scaler.inverse_transform(inv_yhat)
+    # inv_yhat = scaler.inverse_transform(inv_yhat)
     inv_yhat = inv_yhat.reshape(n_samples, n_timesteps, n_features)
+    inv_yhat[inv_yhat<0] = 0 # transform negative values to zero
+    prediction = inv_yhat[:, -3:, 1]
+    prediction = prediction.reshape(prediction.shape[0], prediction.shape[1], 1)
+    original = data[:, -3:, 1]
+    original = original.reshape(original.shape[0], original.shape[1], 1)
+    concat = concatenate((original, prediction), axis=2)
+    print('concat.shape:{}'.format(concat.shape))
+    np.set_printoptions(threshold=1e6)
+    print('concat\n{}'.format(concat))
+    concat = concat.reshape(concat.shape[0]*concat.shape[1], concat.shape[2])
+    df = pd.DataFrame(concat)
+    df.columns = ['original', 'prediction']
+    df.to_csv('./data/LSTM/prediction_LSTM_{}.csv'.format(n_features), index=False)
     rmse = sqrt(mean_squared_error(inv_yhat[:, -3:, 1], data[:, -3:, 1]))
     print('rmse: {}'.format(rmse))
 
 
 if __name__=='__main__':
-    print('only_temporal')
-    la_ha()
-    # lstm()
+    # print('only_temporal')
+    # la_ha()
+    lstm(4)
