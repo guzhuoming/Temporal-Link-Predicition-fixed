@@ -4,7 +4,8 @@ import math
 from math import sqrt
 import csv
 from keras.models import Sequential, Model
-from keras.layers import Lambda, dot, Activation, concatenate, Input, Dense, Dropout, LSTM, Bidirectional, Layer
+from keras.layers import Lambda, dot, Activation, concatenate, Input, Dense, Dropout, SimpleRNN, LSTM, GRU, Bidirectional, Layer
+from keras import optimizers
 import keras.backend as K
 from sklearn.preprocessing import MinMaxScaler
 from matplotlib import pyplot as plt
@@ -40,13 +41,15 @@ class attention(Layer):
     def get_config(self):
         return super(attention,self).get_config()
 
-def la_ha():
+def la_ha(n_train=10,
+
+          ):
     for i in range(len(name_node_pairs)):
         f = open('./data/LA_HA/{}_prediction.csv'.format(name_node_pairs[i]), 'w', newline='')
         csvwriter = csv.writer(f)
         csvwriter.writerow(['t', 'tran_sum_real', 'tran_sum_la', 'tran_sum_ha', 'difference_la', 'difference_ha'])
-        for j in range(3):
-            csvwriter.writerow([j+9, 0., 0., 0., 0., 0.])
+        for j in range(12-n_train):
+            csvwriter.writerow([j+n_train, 0., 0., 0., 0., 0.])
         f.close()
 
     mse_la = 0
@@ -64,39 +67,42 @@ def la_ha():
         historical_sum = 0.
         tran_sum_acc = 0
 
-        for j in range(9):
+        for j in range(n_train):
             tran_sum_acc = tran_sum_acc + df_node_pair['tran_sum'][j]
 
-        last_value = df_node_pair['tran_sum'][8]
+        last_value = df_node_pair['tran_sum'][n_train-1]
 
-        for j in range(9, 12):
+        for j in range(n_train, 12):
             tran_sum = df_node_pair['tran_sum'][j]
-            df_prediction['tran_sum_real'][j - 9] = tran_sum
-            df_prediction['tran_sum_ha'][j - 9] = historical_sum / j
+            df_prediction['tran_sum_real'][j - n_train] = tran_sum
+            df_prediction['tran_sum_ha'][j - n_train] = historical_sum / j
             tran_sum_acc = tran_sum_acc + tran_sum
-            historical_sum = historical_sum + df_prediction['tran_sum_ha'][j - 9]
-            df_prediction['tran_sum_la'][j - 9] = last_value
-            df_prediction['difference_ha'][j - 9] = df_prediction['tran_sum_ha'][j - 9] - \
-                                                    df_prediction['tran_sum_real'][j - 9]
-            df_prediction['difference_la'][j - 9] = df_prediction['tran_sum_la'][j - 9] - \
-                                                    df_prediction['tran_sum_real'][j - 9]
+            historical_sum = historical_sum + df_prediction['tran_sum_ha'][j - n_train]
+            df_prediction['tran_sum_la'][j - n_train] = last_value
+            df_prediction['difference_ha'][j - n_train] = df_prediction['tran_sum_ha'][j - n_train] - \
+                                                    df_prediction['tran_sum_real'][j - n_train]
+            df_prediction['difference_la'][j - n_train] = df_prediction['tran_sum_la'][j - n_train] - \
+                                                    df_prediction['tran_sum_real'][j - n_train]
 
             # calculate mse in the loop, accumulate it outside the loop
-            mse_ha = mse_ha + math.pow(df_prediction['difference_ha'][j - 9], 2)
-            mse_la = mse_la + math.pow(df_prediction['difference_la'][j - 9], 2)
+            mse_ha = mse_ha + math.pow(df_prediction['difference_ha'][j - n_train], 2)
+            mse_la = mse_la + math.pow(df_prediction['difference_la'][j - n_train], 2)
 
         df_prediction.to_csv('./data/LA_HA/{}.csv'.format(name_node_pairs[i]),index=False)
-    rmse_ha = math.sqrt(mse_ha / (len(name_node_pairs) * 3))
-    rmse_la = math.sqrt(mse_la / (len(name_node_pairs) * 3))
+    rmse_ha = math.sqrt(mse_ha / (len(name_node_pairs) * (12-n_train)))
+    rmse_la = math.sqrt(mse_la / (len(name_node_pairs) * (12-n_train)))
     print('rmse_ha:{}, rmse_la:{}'.format(rmse_ha, rmse_la))
 
 # def arima():
 #
 def lstm(n_features=4,
-         n_train=9,
+         n_train=10,
          n_window=5,
          n_units=100,
-         n_epochs=50
+         n_epochs=50,
+         with_att=False,
+         methods='lstm',
+         lr=0.001
          ):
     """
 
@@ -135,13 +141,24 @@ def lstm(n_features=4,
 
     # Model
     inputs = Input(shape=(n_window, n_features))
-    att_in = Bidirectional(LSTM(n_units, input_shape=(n_window, n_features), return_sequences=True))(inputs)
-    print('att_in.shape{}'.format(att_in.shape))
-    att_out = attention()(att_in)
-    print('att_out.shape{}'.format(att_out.shape))
-    outputs = Dense(1)(att_out)
+    return_sequences = False
+    if with_att==True:
+        return_sequences = True
+    if methods=='lstm':
+        att_in = Bidirectional(LSTM(n_units, input_shape=(n_window, n_features), return_sequences=return_sequences))(inputs)
+    elif methods=='gru':
+        att_in = Bidirectional(GRU(n_units, input_shape=(n_window, n_features), return_sequences=return_sequences))(inputs)
+    elif methods=='rnn':
+        att_in = Bidirectional(SimpleRNN(n_units, input_shape=(n_window, n_features), return_sequences=return_sequences))(inputs)
+    if with_att==True:
+        att_out = attention()(att_in)
+        outputs = Dense(1)(att_out)
+    else:
+        outputs = Dense(1)(att_in)
+
     model = Model(inputs, outputs)
-    model.compile(loss='mse', optimizer='adam')
+    opt = optimizers.Adam(lr=lr)
+    model.compile(loss='mse', optimizer=opt)
 
     # fit network
     for i in range(n_train-n_window):
@@ -191,5 +208,5 @@ def lstm(n_features=4,
 
 if __name__=='__main__':
     # print('only_temporal')
-    # la_ha()
-    lstm(4, n_epochs=100)
+    # la_ha(n_train=10)
+    lstm(n_features=4, n_epochs=100, with_att=True, n_train=10, n_window=6, methods='lstm', lr=0.001)

@@ -100,7 +100,37 @@ def adj_edgelist():
 
     # return adj, edgelist, name_dict
 
-def plotGraph():
+def edge_list():
+    name = open('./data/name.csv')
+    df_name = pd.read_csv(name)
+    name_dict = {}
+
+    # label for dict
+    # label 739 target nodes, begin from 0
+    total_num = 0
+
+    for i in range(len(df_name)):
+        name_ = df_name['name_node_pairs'][i]
+        name_dict[name_] = total_num
+        total_num += 1
+
+    # reverse the dict
+    # key: node pair, value: label -> key: label, value: node pair
+    label_dict = {v: k for k, v in name_dict.items()}
+    f = open('./data/node2vec/edgelist/temp_link_pred_edgelist.txt', 'w')
+    pos = label_dict[0].find('_')
+    for i in range(736):
+        print('i = {}'.format(i))
+        for j in range(i + 1, total_num):
+            x1 = label_dict[i][0:pos]
+            y1 = label_dict[i][pos:]
+            x2 = label_dict[j][0:pos]
+            y2 = label_dict[j][pos:]
+            if x1 == x2 or x1 == y2 or y1 == x2 or y1 == y2:
+                f.write('{} {}\n'.format(i, j))
+    f.close()
+
+def plotGraph(withLabels = False):
     """
     print the graph of source nodes
     calculate the number of different nodes
@@ -136,14 +166,13 @@ def plotGraph():
         y = name_[pos + 1:]
         G.add_edge(node_dict[x], node_dict[y])
     plt.figure()
-    nx.draw(G, with_labels=True)
+    nx.draw(G, with_labels=withLabels, node_size=250)
     plt.show()
 
     # return
 
-
-
 if __name__ == '__main__':
     print('preprocess: ')
     # adj_edgelist()
-    # plotGraph()
+    # plotGraph(withLabels=False)
+    edge_list()
