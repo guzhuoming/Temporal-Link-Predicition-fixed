@@ -55,7 +55,6 @@
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 # file = open('./data/name_duplicate.csv')
 # df = pd.read_csv(file)
 # df1 = df.drop_duplicates(keep=False)
@@ -86,29 +85,55 @@ import matplotlib.pyplot as plt
 # print(li)
 # f.close()
 
-"""
-plot number of neibours
-"""
-f = open('./data/neighbour_nums.csv')
-df = pd.read_csv(f)
+# """
+# # plot number of neibours
+# # """
+# # f = open('./data/neighbour_nums.csv')
+# # df = pd.read_csv(f)
+# #
+# # labels = df['labelOfNodes'].values
+# # neighbors = df['neighbourNum'].values
+# #
+# # print('mean: {}, median: {}'.format(np.mean(neighbors), np.median(neighbors)))
+# #
+# # plt.figure()
+# # plt.plot(labels, neighbors)
+# # plt.xlabel('node label')
+# # plt.ylabel('number of neighbours')
+# # plt.show()
+# # plt.figure()
+# # plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], rwidth=0.8)
+# # plt.xlabel('number of neighbours')
+# # plt.ylabel('number of nodes')
+# # plt.show()
+# # plt.figure()
+# # plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], cumulative=True, rwidth=0.8)
+# # plt.xlabel('number of neighbours(cumulative)')
+# # plt.ylabel('number of nodes')
+# # plt.show()
 
-labels = df['labelOfNodes'].values
-neighbors = df['neighbourNum'].values
 
-print('mean: {}, median: {}'.format(np.mean(neighbors), np.median(neighbors)))
-
-plt.figure()
-plt.plot(labels, neighbors)
-plt.xlabel('node label')
-plt.ylabel('number of neighbours')
-plt.show()
-plt.figure()
-plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], rwidth=0.8)
-plt.xlabel('number of neighbours')
-plt.ylabel('number of nodes')
-plt.show()
-plt.figure()
-plt.hist(neighbors, bins=[0, 50, 100, 200, 500, 1000, 2000, 3000, 5000,10000], cumulative=True, rwidth=0.8)
-plt.xlabel('number of neighbours(cumulative)')
-plt.ylabel('number of nodes')
-plt.show()
+# 看缺少了哪个节点的embedding
+# def ReadTxtName(rootdir): #输入l为[]
+#     f = open(rootdir)
+#     line = f.readline()
+#     data_array = []
+#     while line:
+#         num = list(map(float, line.split(' ')))
+#         data_array.append(num)
+#         line = f.readline()
+#     f.close()
+#     # 12 8
+#     # 0 x x x x x x x x
+#     # 1 x x x x x x x x
+#     # 2 ......
+#     del data_array[0] #删除第一行
+#     data_array = list(map(lambda x:x[0], data_array)) # 保留第一列
+#     # data_array = np.array(data_array)
+#     # data_array = np.delete(data_array, 0, axis=0)
+#     return data_array
+#
+# data = ReadTxtName('./data/vec_temp_link_pred_node2vec.txt')
+# data = list(map(lambda x: int(x), data))
+# data.sort()
+# print(data)
