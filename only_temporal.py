@@ -8,8 +8,9 @@ from keras.layers import Lambda, dot, Activation, concatenate, Input, Dense, Dro
 from keras import optimizers
 import keras.backend as K
 from sklearn.preprocessing import MinMaxScaler
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error
+from statsmodels.tsa.arima_model import ARIMA
 from tensorflow import set_random_seed
 set_random_seed(2)
 
@@ -40,6 +41,25 @@ class attention(Layer):
 
     def get_config(self):
         return super(attention,self).get_config()
+
+# read embedding vector
+def readEmbedding(rootdir):
+    f = open(rootdir)
+    line = f.readline()
+    data_array = []
+    while line:
+        num = list(map(float, line.split(' ')))
+        data_array.append(num)
+        line = f.readline()
+    f.close()
+    # 736 128
+    # 0 x x x x x x x x
+    # 1 x x x x x x x x
+    # 2 ......
+    del data_array[0] # delete the first row
+    data_array = list(map(lambda x:x[1:], data_array)) # delete the first column
+    data_array = np.array(data_array)
+    return data_array
 
 def la_ha(n_train=10,
 
@@ -96,6 +116,7 @@ def la_ha(n_train=10,
 # def arima():
 #
 def lstm(n_features=4,
+         n_timesteps=12,
          n_train=10,
          n_window=5,
          n_units=100,
@@ -114,10 +135,12 @@ def lstm(n_features=4,
     :return:
     """
     data = []
+
     for i in range(len(name_node_pairs)):
         f = open('./data/features_{}/{}_temp_link_ft.csv'.format(n_features, name_node_pairs[i]))
         df = pd.read_csv(f)
         data.append(df.values)
+
     data = np.array(data)
     print('data: {}, \ndata.shape(): {}'.format(data, data.shape))
 
@@ -205,8 +228,39 @@ def lstm(n_features=4,
     rmse = sqrt(mean_squared_error(inv_yhat[:, -3:, 1], data[:, -3:, 1]))
     print('rmse: {}'.format(rmse))
 
+def arima():
+    mse = 0
+    error = 0
+    for i in range(len(name_node_pairs)):
+        print(i)
+        f = open('./data/features_4/{}_temp_link_ft.csv'.format(name_node_pairs[i]))
+        df = pd.read_csv(f)
+
+        data = df['tran_sum'].values
+        train = data[0:10]
+        history = [x for x in train]
+        test = data[10:]
+        pred = []
+        try:
+            for t in range(len(test)):
+                model = ARIMA(history, order=(1,1,0))
+                model_fit = model.fit(disp=0)
+                output = model_fit.forecast()
+                yhat = output[0]
+                pred.append(yhat)
+                history.append(test[t])
+            mse = mse + mean_squared_error(test, pred)
+            print(mse)
+        except:
+                error = error+1
+                continue
+
+    rmse = np.sqrt(mse/(len(name_node_pairs)-error))
+    print('errornum:{}'.format(error))
+    print('arima, rmse: {}'.format(rmse))
 
 if __name__=='__main__':
     # print('only_temporal')
     # la_ha(n_train=10)
-    lstm(n_features=4, n_epochs=100, with_att=True, n_train=10, n_window=6, methods='lstm', lr=0.001)
+    # lstm(n_features=4, n_epochs=100, with_att=True, n_train=10, n_window=7, methods='lstm', lr=0.001)
+    arima()
