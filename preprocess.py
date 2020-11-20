@@ -66,9 +66,9 @@ def adj_edgelist():
         print('i = {}'.format(i))
         for j in range(i + 1, total_num):
             x1 = label_dict[i][0:pos]
-            y1 = label_dict[i][pos:]
+            y1 = label_dict[i][pos+1:]
             x2 = label_dict[j][0:pos]
-            y2 = label_dict[j][pos:]
+            y2 = label_dict[j][pos+1:]
             if x1 == x2 or x1 == y2 or y1 == x2 or y1 == y2:
                 f.write('{} {}\n'.format(i, j))
                 edge_num += 1
@@ -113,19 +113,19 @@ def edge_list():
         name_ = df_name['name_node_pairs'][i]
         name_dict[name_] = total_num
         total_num += 1
-
     # reverse the dict
     # key: node pair, value: label -> key: label, value: node pair
     label_dict = {v: k for k, v in name_dict.items()}
     f = open('./data/node2vec/edgelist/temp_link_pred_edgelist.txt', 'w')
-    pos = label_dict[0].find('_')
     for i in range(736):
-        print('i = {}'.format(i))
+        pos = label_dict[i].find('_')
+        # print('i = {}'.format(i))
         for j in range(i + 1, total_num):
+
             x1 = label_dict[i][0:pos]
-            y1 = label_dict[i][pos:]
+            y1 = label_dict[i][pos+1:]
             x2 = label_dict[j][0:pos]
-            y2 = label_dict[j][pos:]
+            y2 = label_dict[j][pos+1:]
             if x1 == x2 or x1 == y2 or y1 == x2 or y1 == y2:
                 f.write('{} {}\n'.format(i, j))
     f.close()
@@ -171,8 +171,58 @@ def plotGraph(withLabels = False):
 
     # return
 
+def aggregate_neighbors_node2vec():
+    """
+    two-phase process: aggregate 736 nodes
+    For 736 nodes, aggregate every node with its 1-order neighbor.
+    aggregation method: node2vec
+    output: concatenate node2vec features to original features
+    :return:
+    """
+    # edgelist of nodes
+    name = open('./data/name.csv')
+    df_name = pd.read_csv(name)
+    name_dict = {}
+
+    for ii in range(len(df_name)):
+
+        name_ = df_name['name_node_pairs'][ii]
+        print('ii = {}, name = {}'.format(ii, name_))
+        file = open('./data/source_data/{}.csv'.format(name_))
+        data = pd.read_csv(file)
+
+        n = 0
+        for i in range(len(data)):
+            x = data['From'][i]
+            y = data['To'][i]
+            if y<x:
+                temp = y
+                y = x
+                x = temp
+            s = x+'_'+y
+            if s not in name_dict:
+                name_dict[s] = n
+                n += 1
+        label_dict = {v: k for k, v in name_dict.items()}
+        f = open('./data/aggregation/node2vec/edgelist/{}.txt'.format(name_), 'w')
+        for i in range(len(label_dict)):
+            pos = label_dict[i].find('_')
+            for j in range(i+1, len(label_dict)):
+                x1 = label_dict[i][0:pos]
+                y1 = label_dict[i][pos + 1:]
+                x2 = label_dict[j][0:pos]
+                y2 = label_dict[j][pos + 1:]
+                if x1 == x2 or x1 == y2 or y1 == x2 or y1 == y2:
+                    f.write('{} {}\n'.format(i, j))
+        f.close()
+
+
+# def aggregate_neighbors_GCN():
+
+
 if __name__ == '__main__':
     print('preprocess: ')
     # adj_edgelist()
     # plotGraph(withLabels=False)
-    edge_list()
+    # edge_list()
+    aggregate_neighbors_node2vec()
