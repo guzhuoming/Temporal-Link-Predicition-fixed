@@ -216,13 +216,159 @@ def aggregate_neighbors_node2vec():
                     f.write('{} {}\n'.format(i, j))
         f.close()
 
+def find_label():
+    """
+    for every node pair's edgelist, find its label
+    :return:
+    """
+    # edgelist of nodes
+    name = open('./data/name.csv')
+    df_name = pd.read_csv(name)
+    name_dict = {}
+
+    label = pd.DataFrame(columns=['name_node_pairs', 'label'])
+    for ii in range(len(df_name)):
+
+        name_ = df_name['name_node_pairs'][ii]
+        print('ii = {}, name = {}'.format(ii, name_))
+        file = open('./data/source_data/{}.csv'.format(name_))
+        data = pd.read_csv(file)
+        pos_ = name_.find('_')
+        x_ = name_[0:pos_]
+        y_ = name_[pos_+1:]
+        if x_>y_:
+            temp = y_
+            y_ = x_
+            x_ = temp
+        name_ = x_ + '_' + y_
+        n = 0
+
+        alreadyHave = False
+
+        for i in range(len(data)):
+            x = data['From'][i]
+            y = data['To'][i]
+            if y<x:
+                temp = y
+                y = x
+                x = temp
+            s = x+'_'+y
+            if s == name_ and not alreadyHave:
+                label = label.append([{'name_node_pairs': name_, 'label': n}], ignore_index=True)
+                alreadyHave = True
+            if s not in name_dict:
+                name_dict[s] = n
+                n += 1
+
+    label.to_csv('./data/aggregation/node2vec/edgelist/label.csv', index=False)
+
+def aggregate_neighbors_node2vec_node():
+    """
+    two-phase process: 736 times, concatenate two nodes' vector, without transforming to line graph
+    :return:
+    """
+    # edgelist of nodes
+    name = open('./data/name.csv')
+    df_name = pd.read_csv(name)
+    name_dict = {}
+    label = pd.DataFrame(columns=['name_node_pairs', 'x', 'y'])
+    for ii in range(len(df_name)):
+        print('ii = {}'.format(ii))
+        name_ = df_name['name_node_pairs'][ii]
+        print('ii = {}, name = {}'.format(ii, name_))
+        file = open('./data/source_data/{}.csv'.format(name_))
+        data = pd.read_csv(file)
+
+        edges = set()
+        n = 0
+        f = open('./data/aggregation/node2vec/edgelist_node/{}.txt'.format(name_), 'w')
+        for i in range(len(data)):
+            x = data['From'][i]
+            y = data['To'][i]
+            if x not in name_dict:
+                name_dict[x] = n
+                n += 1
+            if y not in name_dict:
+                name_dict[y] = n
+                n += 1
+            str2write = '{} {}\n'.format(name_dict[x], name_dict[y])
+            if str2write not in edges:
+                f.write(str2write)
+        pos = name_.find('_')
+        x_ = name_[0:pos]
+        y_ = name_[pos+1:]
+        label = label.append([{'name_node_pairs': name_, 'x': name_dict[x_], 'y': name_dict[y_]}], ignore_index=True)
+        f.close()
+    label.to_csv('./data/aggregation/node2vec/edgelist_node/label.csv', index=False)
+
+def aggregation_node2vec_cmd():
+    """
+    run node2vec for all node pairs
+    :return:
+    """
+    name = open('./data/name.csv')
+    df_name = pd.read_csv(name)
+    f = open('./data/aggregation/node2vec/edgelist_node/node2vec_cmd.txt', 'w')
+    for i in range(len(df_name)):
+        name_ = df_name['name_node_pairs'][i]
+        f.write('python -m openne --method node2vec --input data/temp_link_pred/{}.txt  --graph-format edgelist --output output/vec_{}.txt --q 0.25 --p 0.25\n'.format(name_, name_))
+    f.close
+
+def readEmbedding(rootdir):
+    f = open(rootdir)
+    line = f.readline()
+    data_array = []
+    while line:
+        num = list(map(float, line.split(' ')))
+        data_array.append(num)
+        line = f.readline()
+    f.close()
+    # 736 128
+    # 0 x x x x x x x x
+    # 1 x x x x x x x x
+    # 2 ......
+    del data_array[0] # delete the first row
+    # data_array = list(map(lambda x:x[1:], data_array)) # delete the first column
+    data_array = np.array(data_array)
+    return data_array
+
+def concat_node2vec():
+    name = open('./data/name.csv')
+    df_name = pd.read_csv(name)
+    label = open('./data/aggregation/node2vec/edgelist_node/label.csv')
+    df_label = pd.read_csv(label)
+    for i in range(len(df_name)):
+        print('i = {}'.format(i))
+        name_ = df_name['name_node_pairs'][i]
+        vec = readEmbedding('./data/aggregation/node2vec/outputvec/vec_{}.txt'.format(name_))
+        x = df_label['x'][i]
+        y = df_label['y'][i]
+
+        feature = open('./data/features_4/{}_temp_link_ft.csv'.format(name_))
+        feature_ = pd.read_csv(feature)
+
+        vec_ = np.array([])
+        for j in range(len(vec)):
+            if vec[j, 0] == x:
+                vec_ = np.concatenate([vec_, vec[j, 1:]])
+            if vec[j, 0] == y:
+                vec_ = np.concatenate([vec_, vec[j, 1:]])
+        for j in range(len(vec_)):
+            feature_['node2vec_{}'.format(j)] = [vec_[j] for k in range(len(feature_))]
+
+        feature_.to_csv('./data/features_4_node2vec/{}_temp_link_ft.csv'.format(name_), index=False)
+
 
 # def aggregate_neighbors_GCN():
-
+# python -m openne --method node2vec --input data/temp_link_pred/0x564286362092d8e7936f0549571a803b203aaced_0xf2b1fdc974a80ae077f285421eb39e10403fb1f2.txt  --graph-format edgelist --output vec_temp_link_pred_node2vec.txt --q 0.25 --p 0.25
 
 if __name__ == '__main__':
     print('preprocess: ')
     # adj_edgelist()
     # plotGraph(withLabels=False)
     # edge_list()
-    aggregate_neighbors_node2vec()
+    # aggregate_neighbors_node2vec()
+    # find_label()
+    # aggregate_neighbors_node2vec_node()
+    # aggregation_node2vec_cmd()
+    concat_node2vec()
