@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
-# from xgboost import XGBRegressor
+from xgboost import XGBRegressor
 from tensorflow import set_random_seed
 set_random_seed(2)
 
@@ -315,6 +315,8 @@ def walk_forward_validation(data, n_test, methods='randomforest'):
             yhat = random_forest_forecast(history, testX)
         elif methods=='xgboost':
             yhat = xgboost_forecast(history, testX)
+        if yhat<0:
+            yhat=0
         # store forecast in list of predictions
         predictions.append(yhat)
         # add actual observation to history for the next loop
@@ -371,8 +373,10 @@ def xgboost():
     print('xgboost, rmse: {}'.format(rmse))
 
 if __name__=='__main__':
-    # print('only_temporal')
+    print('only_temporal')
     # la_ha(n_train=10)
     # lstm(n_features=4, n_epochs=100, with_att=True, n_train=10, n_window=7, methods='lstm', lr=0.001)
     # arima()
-    randomforest()
+    # randomforest()
+    # xgboost()
+    # test
